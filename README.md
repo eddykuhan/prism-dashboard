@@ -262,6 +262,44 @@ kubectl create deployment prism --image=yourregistry/prism:v1.0.0
 kubectl expose deployment prism --port=5003 --type=LoadBalancer
 ```
 
+## 🔄 CI/CD Pipeline (GitHub Actions)
+
+Automated build and push to JFrog Registry on every push to `main` or `develop` branches.
+
+### Setup JFrog Secrets
+
+Add these secrets to your GitHub repository:
+
+```
+JFROG_REGISTRY     - JFrog registry URL (e.g., registry.jfrog.io)
+JFROG_USERNAME     - JFrog username
+JFROG_PASSWORD     - JFrog password/API token
+```
+
+### Workflow Trigger
+
+The pipeline automatically:
+1. ✅ Builds .NET API (`dotnet build`)
+2. ✅ Builds Angular frontend (`npm run build`)
+3. ✅ Creates Docker image from both artifacts
+4. ✅ Pushes to JFrog Registry with git commit hash tag + `latest`
+
+**Workflow file:** `.github/workflows/docker-build-push.yml`
+
+### Image Naming
+
+- **Development/PR:** Images built but not pushed
+- **Main/Develop push:** `registry.jfrog.io/docker/prism-otel:abc1234` (commit hash)
+- **Latest tag:** `registry.jfrog.io/docker/prism-otel:latest`
+
+### Manual Build Without Pushing
+
+To build locally without pushing:
+```bash
+cd prism
+docker build -t prism-otel:test .
+```
+
 ## 📈 Sending Telemetry Data
 
 ### Quick Start: Connect Your Service

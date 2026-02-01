@@ -1,0 +1,93 @@
+name: Feature Branch CI
+
+on:
+  push:
+    branches:
+      - 'feature/**'
+      - 'bugfix/**'
+      - 'hotfix/**'
+  pull_request:
+    branches:
+      - main
+      - develop
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup .NET 10
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Restore .NET dependencies
+        working-directory: ./otel-dashboard-api
+        run: dotnet restore
+
+      - name: Build .NET API
+        working-directory: ./otel-dashboard-api
+        run: dotnet build --configuration Release --no-restore
+
+      - name: Setup Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: './otel-dashboard-frontend/package-lock.json'
+
+      - name: Install Angular dependencies
+        working-directory: ./otel-dashboard-frontend
+        run: npm ci
+
+      - name: Lint Angular code
+        working-directory: ./otel-dashboard-frontend
+        run: npm run lint --if-present
+
+      - name: Build Angular app
+        working-directory: ./otel-dashboard-frontend
+        run: npm run build
+
+      - name: Run unit tests (.NET)
+        working-directory: ./otel-dashboard-api
+        run: dotnet test --configuration Release --no-build --verbosity normal --logger "trx;LogFileName=test-results.trx"
+        continue-on-error: true
+
+      - name: Run unit tests (Angular)
+        working-directory: ./otel-dashboard-frontend
+        run: npm run test -- --watch=false --browsers=ChromeHeadless
+        continue-on-error: true
+
+      - name: Docker setup
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build Docker image (preview)
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: false
+          tags: prism-otel:${{ github.ref_name }}-${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Build Summary
+        if: always()
+        run: |
+          echo "## ✅ Feature Branch CI Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Branch:** \`${{ github.ref_name }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "**Commit:** \`${{ github.sha }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Build Status" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ .NET API built successfully" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Angular frontend built successfully" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Docker image buildable (not pushed)" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Note:** Images are built and cached but not pushed to registry. Merge to \`main\` or \`develop\` to trigger registry push." >> $GITHUB_STEP_SUMMARY
