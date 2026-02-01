@@ -29,11 +29,11 @@ jobs:
           dotnet-version: '10.0.x'
 
       - name: Restore .NET dependencies
-        working-directory: ./otel-dashboard-api
+        working-directory: ./prism-api
         run: dotnet restore
 
       - name: Build .NET API
-        working-directory: ./otel-dashboard-api
+        working-directory: ./prism-api
         run: dotnet build --configuration Release --no-restore
 
       - name: Setup Node.js 20
@@ -41,27 +41,27 @@ jobs:
         with:
           node-version: '20'
           cache: 'npm'
-          cache-dependency-path: './otel-dashboard-frontend/package-lock.json'
+          cache-dependency-path: './prism-frontend/package-lock.json'
 
       - name: Install Angular dependencies
-        working-directory: ./otel-dashboard-frontend
+        working-directory: ./prism-frontend
         run: npm ci
 
       - name: Lint Angular code
-        working-directory: ./otel-dashboard-frontend
+        working-directory: ./prism-frontend
         run: npm run lint --if-present
 
       - name: Build Angular app
-        working-directory: ./otel-dashboard-frontend
+        working-directory: ./prism-frontend
         run: npm run build
 
       - name: Run unit tests (.NET)
-        working-directory: ./otel-dashboard-api
+        working-directory: ./prism-api
         run: dotnet test --configuration Release --no-build --verbosity normal --logger "trx;LogFileName=test-results.trx"
         continue-on-error: true
 
       - name: Run unit tests (Angular)
-        working-directory: ./otel-dashboard-frontend
+        working-directory: ./prism-frontend
         run: npm run test -- --watch=false --browsers=ChromeHeadless
         continue-on-error: true
 
@@ -73,7 +73,7 @@ jobs:
         with:
           context: .
           push: false
-          tags: prism-otel:${{ github.ref_name }}-${{ github.sha }}
+          tags: prism-dashboard:${{ github.ref_name }}-${{ github.sha }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 

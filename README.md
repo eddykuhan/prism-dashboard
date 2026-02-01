@@ -1,10 +1,10 @@
-# Prism: OTEL Dashboard with AI Copilot
+# Prism: Developers Dashboard with AI Copilot
 
 <div align="center">
   <img src="public/logo.svg" alt="Prism Logo" width="128" height="128" />
 </div>
 
-A unified OpenTelemetry (OTEL) dashboard combining real-time trace, metrics, and log visualization with intelligent Azure OpenAI integration via OAuth2 On-Behalf-Of (OBO) flow.
+A unified developer dashboard combining real-time OpenTelemetry data, Kubernetes pod monitoring, ServiceNow incident tracking, and GitHub PR insights with intelligent Azure OpenAI integration via OAuth2 On-Behalf-Of (OBO) flow.
 
 ## 🎯 Features
 
@@ -12,6 +12,9 @@ A unified OpenTelemetry (OTEL) dashboard combining real-time trace, metrics, and
 - **Real-time Logs** - Stream and search application logs with live ingestion metrics
 - **Distributed Traces** - Visualize trace spans with flamegraph-style display and timing analysis
 - **Live Metrics** - Monitor system metrics with streaming updates and charts
+- **Kubernetes Pods** - Monitor pod status, restarts, and resource usage in real-time
+- **ServiceNow Incidents** - Track and prioritize incidents assigned to your team
+- **GitHub PRs** - Monitor pull requests across repositories with status badges
 - **WebSocket Streaming** - Efficient real-time data delivery via gRPC and HTTP/JSON
 - **Interactive Charts** - Real-time ingestion activity graph with hover tooltips
 - **OTLP-Ready** - Drop-in OTLP exporter support for .NET, Node.js, Python, Go, and more
@@ -29,18 +32,27 @@ A unified OpenTelemetry (OTEL) dashboard combining real-time trace, metrics, and
 ```
 prism/
 ├── Dockerfile                    # Multi-stage build for Angular + .NET
-├── otel-dashboard-api/           # .NET 10 API Gateway
+├── prism-api/                    # .NET 10 API Gateway
 │   ├── Controllers/
 │   │   ├── ConfigController.cs   # Runtime config endpoint
 │   │   ├── AiController.cs       # AI chat with OBO flow
 │   │   ├── HealthController.cs
 │   │   ├── LogsController.cs
+│   │   ├── ServiceNowController.cs
+│   │   ├── KubernetesController.cs
+│   │   ├── GitHubController.cs
 │   │   └── ...
 │   ├── Services/
 │   │   ├── OtlpTraceGrpcService.cs
 │   │   ├── OtlpMetricsGrpcService.cs
 │   │   ├── OtlpLogsGrpcService.cs
-│   │   └── WebSocketStreamService.cs
+│   │   ├── WebSocketStreamService.cs
+│   │   ├── ServiceNowService.cs
+│   │   ├── ServiceNowPollingService.cs
+│   │   ├── KubernetesService.cs
+│   │   ├── KubernetesPollingService.cs
+│   │   ├── GitHubService.cs
+│   │   └── GitHubPollingService.cs
 │   ├── Models/
 │   ├── Protos/
 │   │   ├── trace.proto
@@ -48,6 +60,27 @@ prism/
 │   │   └── logs.proto
 │   ├── Program.cs
 │   └── appsettings.json
+├── prism-frontend/               # Angular 18 Dashboard
+│   ├── src/
+│   │   ├── app/
+│   │   │   ├── core/
+│   │   │   │   ├── models/
+│   │   │   │   ├── services/     # API service layer
+│   │   │   │   └── interceptors/
+│   │   │   ├── features/
+│   │   │   │   ├── logs/
+│   │   │   │   ├── traces/
+│   │   │   │   ├── metrics/
+│   │   │   │   ├── servicenow-incidents/
+│   │   │   │   ├── kubernetes-pods/
+│   │   │   │   └── github-pr/
+│   │   │   └── shared/
+│   │   ├── index.html
+│   │   └── main.ts
+│   ├── angular.json
+│   ├── tailwind.config.js
+│   └── package.json
+```
 │
 └── otel-dashboard-frontend/      # Angular 18 SPA
     ├── src/

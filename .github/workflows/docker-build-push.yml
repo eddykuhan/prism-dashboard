@@ -6,8 +6,8 @@ on:
       - main
       - develop
     paths:
-      - 'otel-dashboard-api/**'
-      - 'otel-dashboard-frontend/**'
+      - 'prism-api/**'
+      - 'prism-frontend/**'
       - 'Dockerfile'
       - '.github/workflows/docker-build-push.yml'
   pull_request:
@@ -19,7 +19,7 @@ env:
   JFROG_REGISTRY: ${{ secrets.JFROG_REGISTRY }}
   JFROG_USERNAME: ${{ secrets.JFROG_USERNAME }}
   JFROG_PASSWORD: ${{ secrets.JFROG_PASSWORD }}
-  IMAGE_NAME: prism-otel
+  IMAGE_NAME: prism-dashboard
   REGISTRY_PATH: docker
 
 jobs:

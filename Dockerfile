@@ -3,13 +3,13 @@ FROM --platform=linux/amd64 node:20-alpine AS angular-build
 WORKDIR /app/frontend
 
 # Copy frontend package files
-COPY otel-dashboard-frontend/package*.json ./
+COPY prism-frontend/package*.json ./
 
 # Install dependencies
 RUN npm ci
 
 # Copy frontend source
-COPY otel-dashboard-frontend/ ./
+COPY prism-frontend/ ./
 
 # Build Angular app for production
 RUN npm run build -- --configuration production
@@ -19,12 +19,12 @@ FROM --platform=linux/amd64 mcr.microsoft.com/dotnet/sdk:10.0-preview AS dotnet-
 WORKDIR /app/api
 
 # Copy csproj and restore dependencies
-COPY otel-dashboard-api/*.csproj ./
+COPY prism-api/*.csproj ./
 RUN dotnet restore
 
 # Copy proto files and source
-COPY otel-dashboard-api/Protos/ ./Protos/
-COPY otel-dashboard-api/ ./
+COPY prism-api/Protos/ ./Protos/
+COPY prism-api/ ./
 
 # Build and publish
 RUN dotnet publish -c Release -o out
@@ -40,7 +40,7 @@ RUN apt-get update && apt-get install -y curl && rm -rf /var/lib/apt/lists/*
 COPY --from=dotnet-build /app/api/out ./
 
 # Copy Angular static files to wwwroot
-COPY --from=angular-build /app/frontend/dist/otel-dashboard-frontend/browser ./wwwroot
+COPY --from=angular-build /app/frontend/dist/prism-frontend/browser ./wwwroot
 
 # Expose ports
 # 5003: HTTP REST API + gRPC (HTTP/1.1 + HTTP/2)
@@ -57,4 +57,4 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
     CMD curl -f http://localhost:5003/api/v1/health || exit 1
 
 # Entry point
-ENTRYPOINT ["dotnet", "OtelDashboardApi.dll"]
+ENTRYPOINT ["dotnet", "PrismDashboard.Api.dll"]
