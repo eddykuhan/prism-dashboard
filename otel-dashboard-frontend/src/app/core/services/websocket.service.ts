@@ -86,8 +86,13 @@ export class WebSocketService implements OnDestroy {
     }
 
     private sendSubscription(type: 'subscribe' | 'unsubscribe', channel: string): void {
+        if (!this.socket || this.socket.readyState !== WebSocket.OPEN) {
+            // If we're not fully open yet, skip send; onopen will replay subscriptions.
+            return;
+        }
+
         const message = { type, channel };
-        this.socket?.send(JSON.stringify(message));
+        this.socket.send(JSON.stringify(message));
     }
 
     private handleReconnect(): void {

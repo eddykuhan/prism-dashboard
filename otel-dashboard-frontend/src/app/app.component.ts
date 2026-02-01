@@ -24,6 +24,11 @@ import { AIPanelComponent } from './shared/components/ai-panel/ai-panel.componen
           </div>
         </div>
         <nav class="flex-1 px-3 space-y-1 mt-4">
+          <a routerLink="/" routerLinkActive="bg-primary text-black" [routerLinkActiveOptions]="{ exact: true }"
+             class="flex items-center gap-3 px-3 py-2 rounded-lg text-slate-600 dark:text-[#92adc9] hover:bg-slate-100 dark:hover:bg-[#233648] transition-colors group [&.router-link-active]:hover:bg-primary [&.router-link-active]:text-black">
+             <span class="material-symbols-outlined" routerLinkActive="fill-icon">home</span>
+            <span class="text-sm font-medium">Home</span>
+          </a>
           <!-- Resources link removed -->
           <a routerLink="/logs" routerLinkActive="bg-primary text-black"
              class="flex items-center gap-3 px-3 py-2 rounded-lg text-slate-600 dark:text-[#92adc9] hover:bg-slate-100 dark:hover:bg-[#233648] transition-colors group [&.router-link-active]:hover:bg-primary [&.router-link-active]:text-black">
@@ -39,6 +44,11 @@ import { AIPanelComponent } from './shared/components/ai-panel/ai-panel.componen
              class="flex items-center gap-3 px-3 py-2 rounded-lg text-slate-600 dark:text-[#92adc9] hover:bg-slate-100 dark:hover:bg-[#233648] transition-colors group [&.router-link-active]:hover:bg-primary [&.router-link-active]:text-black">
              <span class="material-symbols-outlined" routerLinkActive="fill-icon">monitoring</span>
             <span class="text-sm font-medium">Metrics</span>
+          </a>
+          <a routerLink="/guide" routerLinkActive="bg-primary text-black"
+             class="flex items-center gap-3 px-3 py-2 rounded-lg text-slate-600 dark:text-[#92adc9] hover:bg-slate-100 dark:hover:bg-[#233648] transition-colors group [&.router-link-active]:hover:bg-primary [&.router-link-active]:text-black">
+             <span class="material-symbols-outlined" routerLinkActive="fill-icon">menu_book</span>
+            <span class="text-sm font-medium">Guide</span>
           </a>
           
           <!-- Copilot Button - Only show when copilot is enabled -->
