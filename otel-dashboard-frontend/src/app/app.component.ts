@@ -100,7 +100,7 @@ import { AIPanelComponent } from './shared/components/ai-panel/ai-panel.componen
               </div>
               <div class="flex-1 overflow-hidden">
                 <p class="text-xs font-medium truncate">Dev Environment</p>
-                <p class="text-[10px] text-slate-500 dark:text-[#92adc9]">v8.0.2</p>
+                <p class="text-[10px] text-slate-500 dark:text-[#92adc9]">v1.0.0</p>
               </div>
             </div>
           }
