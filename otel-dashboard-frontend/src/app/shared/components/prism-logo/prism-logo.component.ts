@@ -5,35 +5,49 @@ import { Component, Input } from '@angular/core';
   standalone: true,
   template: `
     <svg [attr.width]="size" [attr.height]="size" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <!-- Light beam from left -->
-      <line x1="4" y1="32" x2="20" y2="32" stroke="currentColor" stroke-width="2" opacity="0.4"/>
-      
-      <!-- Prism shape (triangle) -->
       <defs>
         <linearGradient id="prismGradient" x1="0%" y1="0%" x2="100%" y2="100%">
           <stop offset="0%" style="stop-color:#3b82f6;stop-opacity:1" />
           <stop offset="100%" style="stop-color:#6366f1;stop-opacity:1" />
         </linearGradient>
+        <filter id="prismShadow">
+          <feDropShadow dx="0" dy="2" stdDeviation="3" flood-opacity="0.15"/>
+        </filter>
       </defs>
       
-      <!-- Main prism triangle -->
-      <polygon points="24,16 24,48 44,32" fill="url(#prismGradient)" stroke="currentColor" stroke-width="1.5"/>
+      <!-- Rounded white background -->
+      <rect x="2" y="2" width="60" height="60" rx="16" ry="16" fill="white" filter="url(#prismShadow)"/>
       
-      <!-- Light refraction lines going right -->
+      <!-- Light beam from left -->
+      <line x1="8" y1="32" x2="22" y2="32" stroke="#e5e7eb" stroke-width="2" stroke-linecap="round"/>
+      
+      <!-- Main prism shape (rounded triangle) -->
+      <g filter="url(#prismShadow)">
+        <path d="M 28 18 L 28 46 Q 28 48 30 48 L 42 32 Q 42 30 40 30 L 28 18 Z" 
+              fill="url(#prismGradient)" stroke="#3b82f6" stroke-width="1.5" stroke-linejoin="round"/>
+      </g>
+      
+      <!-- Light refraction lines going right - made rounder -->
       <!-- Logs (Blue) -->
-      <line x1="44" y1="20" x2="60" y2="8" stroke="#3b82f6" stroke-width="2" stroke-linecap="round"/>
-      <circle cx="60" cy="8" r="2" fill="#3b82f6"/>
+      <g>
+        <line x1="42" y1="22" x2="54" y2="12" stroke="#3b82f6" stroke-width="2.5" stroke-linecap="round" opacity="0.8"/>
+        <circle cx="54" cy="12" r="2.5" fill="#3b82f6"/>
+      </g>
       
       <!-- Traces (Orange) -->
-      <line x1="44" y1="32" x2="60" y2="32" stroke="#f97316" stroke-width="2" stroke-linecap="round"/>
-      <circle cx="60" cy="32" r="2" fill="#f97316"/>
+      <g>
+        <line x1="42" y1="32" x2="56" y2="32" stroke="#f97316" stroke-width="2.5" stroke-linecap="round" opacity="0.8"/>
+        <circle cx="56" cy="32" r="2.5" fill="#f97316"/>
+      </g>
       
       <!-- Metrics (Indigo) -->
-      <line x1="44" y1="44" x2="60" y2="56" stroke="#818cf8" stroke-width="2" stroke-linecap="round"/>
-      <circle cx="60" cy="56" r="2" fill="#818cf8"/>
+      <g>
+        <line x1="42" y1="42" x2="54" y2="52" stroke="#818cf8" stroke-width="2.5" stroke-linecap="round" opacity="0.8"/>
+        <circle cx="54" cy="52" r="2.5" fill="#818cf8"/>
+      </g>
       
-      <!-- Glow effect -->
-      <circle cx="32" cy="32" r="28" fill="none" stroke="currentColor" stroke-width="0.5" opacity="0.1"/>
+      <!-- Subtle glow ring -->
+      <circle cx="32" cy="32" r="30" fill="none" stroke="#3b82f6" stroke-width="0.5" opacity="0.08"/>
     </svg>
   `,
   styles: []
