@@ -342,6 +342,58 @@ docker run -e OTEL_EXPORTER_OTLP_ENDPOINT=http://prism:4317 yourapp:latest
 
 ### OTLP Client Configuration
 
+**OpenTelemetry .NET:**
+```csharp
+using OpenTelemetry;
+using OpenTelemetry.Trace;
+using OpenTelemetry.Metrics;
+using OpenTelemetry.Logs;
+
+// Add OTLP Exporter NuGet packages:
+// dotnet add package OpenTelemetry.Exporter.OpenTelemetryProtocol
+// dotnet add package OpenTelemetry.Instrumentation.AspNetCore
+// dotnet add package OpenTelemetry.Instrumentation.Http
+
+var builder = WebApplication.CreateBuilder(args);
+
+// Configure Traces
+builder.Services.AddOpenTelemetry()
+    .WithTracing(tracing => tracing
+        .AddAspNetCoreInstrumentation()
+        .AddHttpClientInstrumentation()
+        .AddOtlpExporter(options =>
+        {
+            options.Endpoint = new Uri("http://localhost:4317");
+            options.Protocol = OpenTelemetry.Exporter.OtlpExportProtocol.Grpc;
+        }))
+    .WithMetrics(metrics => metrics
+        .AddAspNetCoreInstrumentation()
+        .AddHttpClientInstrumentation()
+        .AddOtlpExporter(options =>
+        {
+            options.Endpoint = new Uri("http://localhost:4317");
+            options.Protocol = OpenTelemetry.Exporter.OtlpExportProtocol.Grpc;
+        }));
+
+// Configure Logs
+builder.Logging.AddOpenTelemetry(logging => logging
+    .AddOtlpExporter(options =>
+    {
+        options.Endpoint = new Uri("http://localhost:4317");
+        options.Protocol = OpenTelemetry.Exporter.OtlpExportProtocol.Grpc;
+    }));
+
+var app = builder.Build();
+app.Run();
+```
+
+**Or via environment variables (no code changes):**
+```bash
+export OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4317
+export OTEL_EXPORTER_OTLP_PROTOCOL=grpc
+dotnet run
+```
+
 **OpenTelemetry Python:**
 ```python
 from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
