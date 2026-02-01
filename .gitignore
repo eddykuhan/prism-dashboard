@@ -1,0 +1,44 @@
+# Dependencies
+node_modules/
+packages/
+
+# Build outputs
+dist/
+build/
+bin/
+obj/
+
+# Angular
+.angular/
+angular.json.cache
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Testing
+coverage/
+.nyc_output/
+
+# Misc
+.cache/
+.temp/
+tmp/
+temp/
+*.tmp

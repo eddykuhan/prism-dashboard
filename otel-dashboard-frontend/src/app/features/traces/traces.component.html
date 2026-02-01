@@ -1,0 +1,307 @@
+<div class="flex flex-col h-full overflow-hidden bg-slate-50 dark:bg-[#0b1016]">
+  <!-- Header Section -->
+  <header class="flex flex-col border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-[#101922]/50">
+    <div class="px-6 pt-4 pb-2">
+      <div class="flex items-center gap-2">
+        <a class="text-slate-500 dark:text-[#9393c8] text-sm font-medium hover:text-primary transition-colors" href="#">Home</a>
+        <span class="text-slate-400 dark:text-[#9393c8] text-sm font-medium">/</span>
+        <span class="text-slate-900 dark:text-white text-sm font-medium">Traces</span>
+      </div>
+    </div>
+    <div class="px-6 pb-4 flex flex-wrap justify-between items-end gap-3">
+      <div class="flex flex-col gap-1">
+        <div class="flex items-center gap-2">
+          <h1 class="text-slate-900 dark:text-white text-2xl font-bold leading-tight tracking-tight">Traces</h1>
+          <span *ngIf="connectionStatus === 'connected'" class="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-500 text-[10px] font-bold uppercase tracking-wider">
+            <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+            Live
+          </span>
+          <span *ngIf="connectionStatus === 'connecting'" class="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-500 text-[10px] font-bold uppercase tracking-wider">
+            <span class="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span>
+            Connecting
+          </span>
+          <span *ngIf="connectionStatus === 'disconnected'" class="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-red-500/10 text-red-500 text-[10px] font-bold uppercase tracking-wider">
+            <span class="w-1.5 h-1.5 rounded-full bg-red-500"></span>
+            Offline
+          </span>
+        </div>
+        <p class="text-slate-500 dark:text-[#9393c8] text-sm font-normal">View request traces across services</p>
+      </div>
+      
+      <!-- Filters -->
+      <div class="flex items-center gap-3">
+        <div class="relative">
+          <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-lg">search</span>
+          <input
+            [(ngModel)]="searchQuery"
+            (ngModelChange)="filterTraces()"
+            class="w-64 bg-slate-100 dark:bg-[#1a1a2e] border border-slate-200 dark:border-slate-700 rounded-lg pl-10 pr-4 py-2 text-sm focus:ring-2 focus:ring-primary focus:border-transparent placeholder:text-slate-400"
+            placeholder="Search by endpoint, service..." type="text" />
+        </div>
+        <select [(ngModel)]="statusFilter" (ngModelChange)="filterTraces()" class="bg-slate-100 dark:bg-[#1a1a2e] border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary">
+          <option value="">All Status</option>
+          <option value="success">Success (2xx)</option>
+          <option value="error">Error (4xx/5xx)</option>
+        </select>
+        <button (click)="clearTraces()" class="flex items-center gap-2 rounded-lg h-9 px-3 bg-slate-200 dark:bg-[#242447] text-slate-700 dark:text-white text-sm font-medium hover:opacity-90 transition-opacity">
+          <span class="material-symbols-outlined text-lg">delete_sweep</span>
+          <span>Clear</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Content Area -->
+  <div class="flex-1 flex overflow-hidden">
+    <!-- Trace List -->
+    <div class="flex-1 overflow-auto custom-scrollbar bg-white dark:bg-[#101922]">
+      <!-- Header Row -->
+      <div class="sticky top-0 trace-grid bg-slate-100 dark:bg-[#16162a] border-b border-slate-200 dark:border-slate-800 z-10">
+        <div class="px-4 py-3 text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wider"></div>
+        <div class="px-4 py-3 text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wider">Timestamp</div>
+        <div class="px-4 py-3 text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wider">Name</div>
+        <div class="px-4 py-3 text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wider">Spans</div>
+        <div class="px-4 py-3 text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wider text-right">Duration</div>
+      </div>
+
+      <!-- Trace Rows -->
+      <ng-container *ngFor="let trace of filteredTraces; trackBy: trackByTraceId">
+        <div class="trace-row">
+          <!-- Main Row -->
+          <div class="trace-grid border-b border-slate-100 dark:border-slate-800/50 hover:bg-slate-50 dark:hover:bg-[#1a1a35] cursor-pointer transition-colors"
+               [ngClass]="{'bg-blue-50 dark:bg-slate-800/50': selectedTraceId === trace.traceId}"
+               (click)="toggleTraceDetails(trace)">
+            <div class="px-4 py-3 flex items-center">
+              <span class="material-symbols-outlined text-slate-400 text-lg transition-transform duration-200"
+                    [class.rotate-90]="selectedTraceId === trace.traceId">
+                chevron_right
+              </span>
+            </div>
+            <div class="px-4 py-3 flex items-center">
+              <span class="text-xs text-slate-500 dark:text-slate-400 font-mono">{{ trace.startTime | date:'MMM d, HH:mm:ss.SSS' }}</span>
+            </div>
+            <div class="px-4 py-3 flex items-center">
+              <div class="flex items-center gap-3">
+                <!-- HTTP Method Badge -->
+                <span class="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide min-w-[50px] text-center"
+                      [ngClass]="getMethodClass(trace.httpMethod)">
+                  {{ trace.httpMethod || 'TRACE' }}
+                </span>
+                <!-- Endpoint & Service -->
+                <div class="flex flex-col min-w-0">
+                  <div class="flex items-center gap-2">
+                    <span class="text-sm font-medium text-slate-900 dark:text-white truncate">{{ trace.endpoint || trace.rootSpan.operationName }}</span>
+                    <span *ngIf="trace.statusCode" class="px-1.5 py-0.5 rounded text-[10px] font-bold"
+                          [ngClass]="getStatusClass(trace.statusCode)">
+                      {{ trace.statusCode }}
+                    </span>
+                    <span *ngIf="trace.hasError && !trace.statusCode" class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-red-500/10 text-red-500">
+                      ERROR
+                    </span>
+                  </div>
+                  <div class="flex items-center gap-2 mt-0.5">
+                    <span class="text-[11px] text-slate-500 dark:text-slate-500">{{ trace.serviceName }}</span>
+                    <span class="text-[10px] text-slate-400 font-mono">{{ trace.traceId.substring(0, 8) }}...</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="px-4 py-3 flex items-center">
+              <span class="text-xs text-slate-600 dark:text-slate-400">{{ trace.spanCount }}</span>
+            </div>
+            <div class="px-4 py-3 flex items-center justify-end">
+              <div class="flex items-center gap-3">
+                <div class="w-24 h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
+                  <div class="h-full rounded-full transition-all"
+                       [class.bg-emerald-500]="!trace.hasError"
+                       [class.bg-red-500]="trace.hasError"
+                       [style.width.%]="getDurationPercentage(trace.durationMs)"></div>
+                </div>
+                <span class="text-sm font-mono text-slate-700 dark:text-slate-300 w-20 text-right">{{ formatDuration(trace.durationMs) }}</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Expanded Waterfall View -->
+          <div *ngIf="selectedTraceId === trace.traceId" class="bg-slate-50 dark:bg-[#0d1520] border-b border-slate-200 dark:border-slate-800">
+            <!-- Loading State -->
+            <div *ngIf="loadingDetails" class="flex items-center justify-center py-12">
+              <span class="material-symbols-outlined animate-spin text-primary text-2xl mr-2">progress_activity</span>
+              <span class="text-slate-500">Loading trace details...</span>
+            </div>
+
+            <!-- Waterfall Content -->
+            <div *ngIf="!loadingDetails && traceSpans.length > 0" class="p-4">
+              <!-- Timeline Header -->
+              <div class="flex items-center mb-4 pl-[280px] pr-4">
+                <div class="flex-1 flex justify-between text-[10px] text-slate-400 font-mono">
+                  <span *ngFor="let marker of getTimelineMarkers()">{{ marker | number:'1.0-0' }}ms</span>
+                </div>
+              </div>
+            
+              <!-- Timeline Grid -->
+              <div class="relative">
+                <!-- Grid Lines -->
+                <div class="absolute left-[280px] right-4 top-0 bottom-0 flex justify-between pointer-events-none">
+                  <div *ngFor="let marker of getTimelineMarkers()" class="w-px h-full bg-slate-200 dark:bg-slate-800"></div>
+                </div>
+
+                <!-- Spans -->
+                <div class="space-y-1 relative z-10">
+                  <div *ngFor="let span of spanTree; trackBy: trackBySpanId" class="group">
+                    <div class="flex items-center h-8 hover:bg-slate-100 dark:hover:bg-slate-800/50 rounded transition-colors cursor-pointer"
+                         (click)="toggleSpanDetails(span.spanId); $event.stopPropagation()">
+                      <!-- Span Info -->
+                      <div class="w-[280px] shrink-0 flex items-center px-2" [style.padding-left.px]="12 + getDepth(span) * 16">
+                        <!-- Expand Arrow -->
+                        <button *ngIf="hasChildren(span.spanId)" 
+                                (click)="toggleExpand(span.spanId); $event.stopPropagation()" 
+                                class="w-5 h-5 flex items-center justify-center mr-1">
+                          <span class="material-symbols-outlined text-sm text-slate-400 transition-transform"
+                                [class.rotate-90]="expandedSpans.has(span.spanId)">chevron_right</span>
+                        </button>
+                        <div *ngIf="!hasChildren(span.spanId)" class="w-5 mr-1"></div>
+                    
+                        <!-- Span Kind Icon -->
+                        <span class="material-symbols-outlined text-sm mr-2"
+                              [ngClass]="getSpanKindIconClass(span)">
+                          {{ getSpanKindIcon(span) }}
+                        </span>
+                    
+                        <!-- Span Name -->
+                        <div class="flex-1 min-w-0 flex items-center gap-2">
+                          <span class="text-xs font-medium text-slate-800 dark:text-slate-200 truncate" [title]="span.operationName">
+                            {{ getSpanDisplayName(span) }}
+                          </span>
+                          <span class="text-[10px] text-slate-400 truncate">{{ span.serviceName }}</span>
+                        </div>
+                      </div>
+
+                      <!-- Gantt Bar -->
+                      <div class="flex-1 relative h-8 px-4">
+                        <div class="absolute h-5 top-1.5 rounded shadow-sm flex items-center justify-end pr-2 min-w-[4px] transition-all group-hover:shadow-md"
+                             [ngClass]="getSpanBarClass(span)"
+                             [style.left.%]="getSpanOffset(span)"
+                             [style.width.%]="getSpanWidth(span)">
+                          <span *ngIf="getSpanWidth(span) > 8" class="text-[10px] font-medium text-white/90 whitespace-nowrap">
+                            {{ formatDuration(span.durationMs) }}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <!-- Span Details (Expandable) -->
+                    <div *ngIf="selectedSpanId === span.spanId" class="ml-[280px] mr-4 mt-1 mb-2">
+                      <div class="bg-white dark:bg-[#1a1a2e] rounded-lg border border-slate-200 dark:border-slate-700 p-4 text-xs">
+                        <div class="grid grid-cols-2 gap-4 mb-4">
+                          <div>
+                            <label class="text-[10px] font-semibold text-slate-500 uppercase tracking-wider">Service</label>
+                            <p class="text-slate-800 dark:text-slate-200 font-medium mt-0.5">{{ span.serviceName }}</p>
+                          </div>
+                          <div>
+                            <label class="text-[10px] font-semibold text-slate-500 uppercase tracking-wider">Duration</label>
+                            <p class="text-slate-800 dark:text-slate-200 font-mono mt-0.5">{{ formatDuration(span.durationMs) }}</p>
+                          </div>
+                          <div>
+                            <label class="text-[10px] font-semibold text-slate-500 uppercase tracking-wider">Start Time</label>
+                            <p class="text-slate-800 dark:text-slate-200 font-mono mt-0.5">{{ span.startTime | date:'HH:mm:ss.SSS' }}</p>
+                          </div>
+                          <div>
+                            <label class="text-[10px] font-semibold text-slate-500 uppercase tracking-wider">Kind</label>
+                            <p class="text-slate-800 dark:text-slate-200 mt-0.5">{{ span.kind }}</p>
+                          </div>
+                        </div>
+                    
+                        <!-- Attributes -->
+                        <div *ngIf="hasAttributes(span.attributes)">
+                          <label class="text-[10px] font-semibold text-slate-500 uppercase tracking-wider">Attributes</label>
+                          <div class="mt-2 bg-slate-50 dark:bg-slate-900 rounded p-3 space-y-1.5 max-h-48 overflow-auto">
+                            <div *ngFor="let key of getAttributeKeys(span.attributes)" class="flex gap-2">
+                              <span class="text-slate-500 font-medium shrink-0">{{ key }}:</span>
+                              <span class="text-slate-800 dark:text-slate-300 font-mono break-all">{{ span.attributes[key] }}</span>
+                            </div>
+                          </div>
+                        </div>
+                    
+                        <!-- IDs -->
+                        <div class="mt-4 pt-3 border-t border-slate-200 dark:border-slate-700 flex gap-6 text-[10px]">
+                          <div>
+                            <span class="text-slate-500">Span ID:</span>
+                            <span class="font-mono text-slate-600 dark:text-slate-400 ml-1">{{ span.spanId }}</span>
+                          </div>
+                          <div *ngIf="span.parentSpanId">
+                            <span class="text-slate-500">Parent:</span>
+                            <span class="font-mono text-slate-600 dark:text-slate-400 ml-1">{{ span.parentSpanId }}</span>
+                          </div>
+                        </div>
+
+                        <!-- Explain with Copilot -->
+                        <div *ngIf="authService.isCopilotEnabled()" class="mt-4 pt-3 border-t border-slate-200 dark:border-slate-700">
+                          <button (click)="explainSpan(span); $event.stopPropagation()"
+                                  class="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-gradient-to-r from-violet-500 to-purple-600 text-white text-xs font-medium hover:opacity-90 transition-opacity">
+                            <span class="material-symbols-outlined text-sm">auto_awesome</span>
+                            Explain with Copilot
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Legend and Actions -->
+              <div class="mt-6 pt-4 border-t border-slate-200 dark:border-slate-800 flex items-center justify-between">
+                <div class="flex items-center gap-6 text-[10px] text-slate-500">
+                  <div class="flex items-center gap-1.5">
+                    <span class="material-symbols-outlined text-blue-500 text-sm">dns</span>
+                    <span>Server</span>
+                  </div>
+                  <div class="flex items-center gap-1.5">
+                    <span class="material-symbols-outlined text-emerald-500 text-sm">language</span>
+                    <span>HTTP Client</span>
+                  </div>
+                  <div class="flex items-center gap-1.5">
+                    <span class="material-symbols-outlined text-violet-500 text-sm">storage</span>
+                    <span>Database</span>
+                  </div>
+                  <div class="flex items-center gap-1.5">
+                    <span class="material-symbols-outlined text-amber-500 text-sm">send</span>
+                    <span>Message</span>
+                  </div>
+                  <div class="flex items-center gap-1.5">
+                    <span class="material-symbols-outlined text-slate-400 text-sm">code</span>
+                    <span>Internal</span>
+                  </div>
+                </div>
+                <button *ngIf="authService.isCopilotEnabled()" (click)="explainTrace(trace)"
+                        class="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-gradient-to-r from-violet-500 to-purple-600 text-white text-xs font-medium hover:opacity-90 transition-opacity">
+                  <span class="material-symbols-outlined text-sm">auto_awesome</span>
+                  Analyze Trace with Copilot
+                </button>
+              </div>
+            </div>
+
+            <!-- Empty State -->
+            <div *ngIf="!loadingDetails && traceSpans.length === 0" class="flex flex-col items-center justify-center py-12 text-slate-400">
+              <span class="material-symbols-outlined text-4xl mb-2">search_off</span>
+              <span>No span data available</span>
+            </div>
+          </div>
+        </div>
+      </ng-container>
+
+      <!-- Empty State -->
+      <div *ngIf="filteredTraces.length === 0" class="flex flex-col items-center justify-center py-16 text-slate-400">
+        <span class="material-symbols-outlined text-5xl mb-3">account_tree</span>
+        <p class="text-lg font-medium">No traces found</p>
+        <p class="text-sm mt-1">Traces will appear here when your application sends telemetry data</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <footer class="h-10 bg-white dark:bg-[#101922] border-t border-slate-200 dark:border-slate-800 px-6 flex items-center justify-between text-xs text-slate-500 shrink-0">
+    <span>{{ filteredTraces.length }} trace{{ filteredTraces.length !== 1 ? 's' : '' }}</span>
+    <span *ngIf="maxDuration">Max duration: {{ formatDuration(maxDuration) }}</span>
+  </footer>
+</div>
