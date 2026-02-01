@@ -125,14 +125,14 @@ docker run -p 5003:5003 -p 4317:4317 \
 
 **Authentication & Authorization:**
 ```env
-# Azure AD Configuration
-AZURE_AD_TENANT_ID=<tenant-id>              # Your Azure AD tenant
-AZURE_AD_CLIENT_ID_API=<api-app-id>         # Backend API app registration
-AZURE_AD_CLIENT_ID_SPA=<spa-app-id>         # Frontend SPA app registration
-AZURE_AD_CLIENT_SECRET=<client-secret>      # API client secret (for OBO)
+# Azure AD Configuration (MSAL auto-activates when ALL three are set)
+AZURE_AD_TENANT_ID=<tenant-id>              # Your Azure AD tenant ID
+AZURE_AD_CLIENT_ID_API=<api-app-id>         # Backend API app registration ID
+AZURE_AD_CLIENT_ID_SPA=<spa-app-id>         # Frontend SPA app registration ID
+AZURE_AD_CLIENT_SECRET=<client-secret>      # API client secret (for OBO flow)
 
-# Azure OpenAI (requires auth enabled)
-AZURE_OPENAI_ENABLED=true|false             # Enable AI Copilot
+# Azure OpenAI (optional, requires auth enabled)
+AZURE_OPENAI_ENABLED=true|false             # Enable AI Copilot feature
 AZURE_OPENAI_ENDPOINT=https://xxx.openai.azure.com
 AZURE_OPENAI_DEPLOYMENT=gpt-4
 AZURE_OPENAI_API_VERSION=2024-02-15-preview
@@ -144,19 +144,45 @@ ASPNETCORE_ENVIRONMENT=Production|Development
 Logging__LogLevel__Default=Information|Debug
 ```
 
+### How Authentication Auto-Activates
+
+1. **Backend** checks if `AZURE_AD_TENANT_ID`, `AZURE_AD_CLIENT_ID_API`, and `AZURE_AD_CLIENT_ID_SPA` are set
+2. **ConfigController** returns `authEnabled: true` when all three env vars are present
+3. **Frontend** (Angular) receives config and dynamically initializes MSAL
+4. **Login/Copilot** buttons appear when auth is active
+5. **Protected endpoints** (`/api/v1/ai/*`) require valid JWT token from Azure AD
+
 ### Deployment Scenarios
 
 #### Scenario 1: Minimal (Telemetry Only)
-- No authentication required
-- No AI features
-- Perfect for development/testing
-- **Start command:** Default docker run
+- **Auth Environment:** None set
+- **Result:** No authentication, public access
+- **Use Case:** Development/testing, internal-only deployments
+- **UI:** No login button, Copilot disabled
 
-#### Scenario 2: Full OBO (Auth + AI)
-- Azure AD authentication via MSAL
-- AI Copilot enabled for authenticated users
-- Secure OBO token flow to Azure OpenAI
-- **Requires Azure AD app registrations** (see Azure Setup section)
+**Docker:**
+```bash
+docker run -p 5003:5003 -p 4317:4317 prism:latest
+```
+
+#### Scenario 2: Full OBO (Auth + AI) - AUTO-ACTIVATED
+- **Auth Environment:** `AZURE_AD_TENANT_ID`, `AZURE_AD_CLIENT_ID_API`, `AZURE_AD_CLIENT_ID_SPA` set
+- **Result:** MSAL auto-activates, users must sign in
+- **Use Case:** Production, multi-user SaaS
+- **UI:** Login button visible, Copilot requires sign-in
+
+**Docker:**
+```bash
+docker run -p 5003:5003 -p 4317:4317 \
+  -e AZURE_AD_TENANT_ID=<your-tenant-id> \
+  -e AZURE_AD_CLIENT_ID_API=<api-app-id> \
+  -e AZURE_AD_CLIENT_ID_SPA=<spa-app-id> \
+  -e AZURE_AD_CLIENT_SECRET=<client-secret> \
+  -e AZURE_OPENAI_ENABLED=true \
+  -e AZURE_OPENAI_ENDPOINT=https://<resource>.openai.azure.com \
+  -e AZURE_OPENAI_DEPLOYMENT=gpt-4 \
+  prism:latest
+```
 
 ## 📊 API Endpoints
 
