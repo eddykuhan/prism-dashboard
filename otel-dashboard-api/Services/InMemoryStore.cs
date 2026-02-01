@@ -7,9 +7,10 @@ namespace OtelDashboardApi.Services;
 
 /// <summary>
 /// Thread-safe in-memory storage for OpenTelemetry data.
+/// Implements ITelemetryStore for unified storage abstraction.
 /// Uses concurrent collections for lock-free access and maintains multiple indexes for fast queries.
 /// </summary>
-public class InMemoryStore
+public class InMemoryStore : ITelemetryStore
 {
     private readonly ILogger<InMemoryStore> _logger;
     
@@ -289,6 +290,75 @@ public class InMemoryStore
     public (int LogCount, int MetricCount, int TraceCount) GetStats()
     {
         return (_logs.Count, _metrics.Count, _tracesByTraceId.Count);
+    }
+
+    #endregion
+
+    #region ITelemetryStore Async Implementations
+
+    public Task<long> AddLogAsync(LogEntry log, CancellationToken cancellationToken = default)
+    {
+        return Task.FromResult(AddLog(log));
+    }
+
+    public Task<List<LogEntry>> GetLogsSinceAsync(long sinceId, int limit = 100, CancellationToken cancellationToken = default)
+    {
+        return Task.FromResult(GetLogsSince(sinceId, limit));
+    }
+
+    public Task<List<LogEntry>> QueryLogsAsync(
+        string? serviceName = null,
+        LogLevel? level = null,
+        DateTime? startTime = null,
+        DateTime? endTime = null,
+        string? traceId = null,
+        int limit = 100,
+        CancellationToken cancellationToken = default)
+    {
+        return Task.FromResult(QueryLogs(serviceName, level, startTime, endTime, traceId, limit));
+    }
+
+    public Task<long> AddMetricAsync(MetricEntry metric, CancellationToken cancellationToken = default)
+    {
+        return Task.FromResult(AddMetric(metric));
+    }
+
+    public Task<List<MetricEntry>> QueryMetricsAsync(
+        string? name = null,
+        string? serviceName = null,
+        DateTime? startTime = null,
+        DateTime? endTime = null,
+        int limit = 100,
+        CancellationToken cancellationToken = default)
+    {
+        return Task.FromResult(QueryMetrics(name, serviceName, startTime, endTime, limit));
+    }
+
+    public Task AddSpanAsync(TraceSpan span, CancellationToken cancellationToken = default)
+    {
+        AddSpan(span);
+        return Task.CompletedTask;
+    }
+
+    public Task<List<TraceSpan>?> GetTraceAsync(string traceId, CancellationToken cancellationToken = default)
+    {
+        return Task.FromResult(GetTrace(traceId));
+    }
+
+    public Task<List<(string TraceId, TraceSpan RootSpan)>> QueryTracesAsync(
+        string? serviceName = null,
+        long? minDurationMs = null,
+        DateTime? startTime = null,
+        DateTime? endTime = null,
+        int limit = 50,
+        CancellationToken cancellationToken = default)
+    {
+        return Task.FromResult(QueryTraces(serviceName, minDurationMs, startTime, endTime, limit));
+    }
+
+    public Task<(int LogCount, int MetricCount, int TraceCount)> GetStatsAsync(CancellationToken cancellationToken = default)
+    {
+        return Task.FromResult(GetStats());
     }
 
     #endregion

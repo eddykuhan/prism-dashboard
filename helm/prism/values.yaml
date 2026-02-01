@@ -1,0 +1,158 @@
+replicaCount: 2
+
+image:
+  registry: registry.jfrog.io
+  repository: docker/prism-otel
+  tag: "latest"
+  pullPolicy: IfNotPresent
+
+imagePullSecrets: []
+
+nameOverride: ""
+fullnameOverride: ""
+
+serviceAccount:
+  create: true
+  annotations:
+    # For AWS IRSA (IAM Role for Service Accounts)
+    # eks.amazonaws.com/role-arn: arn:aws:iam::ACCOUNT_ID:role/prism-dynamodb-role
+  name: ""
+
+podAnnotations: {}
+
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 1000
+  fsGroup: 1000
+
+securityContext:
+  allowPrivilegeEscalation: false
+  capabilities:
+    drop:
+      - ALL
+  readOnlyRootFilesystem: true
+
+service:
+  type: ClusterIP
+  port: 80
+  targetPort: 5003
+  annotations: {}
+
+ingress:
+  enabled: true
+  className: "nginx"
+  annotations:
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+  hosts:
+    - host: prism.example.com
+      paths:
+        - path: /
+          pathType: Prefix
+  tls:
+    - secretName: prism-tls
+      hosts:
+        - prism.example.com
+
+resources:
+  limits:
+    cpu: 500m
+    memory: 512Mi
+  requests:
+    cpu: 250m
+    memory: 256Mi
+
+autoscaling:
+  enabled: true
+  minReplicas: 2
+  maxReplicas: 5
+  targetCPUUtilizationPercentage: 80
+  targetMemoryUtilizationPercentage: 80
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity:
+  podAntiAffinity:
+    preferredDuringSchedulingIgnoredDuringExecution:
+      - weight: 100
+        podAffinityTerm:
+          labelSelector:
+            matchExpressions:
+              - key: app.kubernetes.io/name
+                operator: In
+                values:
+                  - prism
+          topologyKey: kubernetes.io/hostname
+
+livenessProbe:
+  httpGet:
+    path: /health
+    port: 5003
+  initialDelaySeconds: 30
+  periodSeconds: 10
+  timeoutSeconds: 5
+  failureThreshold: 3
+
+readinessProbe:
+  httpGet:
+    path: /health
+    port: 5003
+  initialDelaySeconds: 10
+  periodSeconds: 5
+  timeoutSeconds: 3
+  failureThreshold: 3
+
+# ===========================================
+# Storage Configuration
+# ===========================================
+storage:
+  # Options: "memory" or "dynamodb"
+  type: memory
+  
+  # DynamoDB Configuration (only used when storage.type = "dynamodb")
+  dynamodb:
+    # AWS Region
+    region: us-east-1
+    
+    # Table names
+    logsTable: prism-logs
+    metricsTable: prism-metrics
+    tracesTable: prism-traces
+    
+    # TTL in days (automatic data expiration)
+    ttlDays: 30
+    
+    # For local development with DynamoDB Local
+    # Set to empty string for production (uses IAM/IRSA)
+    endpoint: ""
+
+# ===========================================
+# Environment Variables
+# ===========================================
+env:
+  - name: ASPNETCORE_ENVIRONMENT
+    value: "Production"
+
+# Additional environment variables from ConfigMap/Secret
+envFrom: []
+# - configMapRef:
+#     name: prism-config
+# - secretRef:
+#     name: prism-secrets
+
+secrets:
+  enabled: false
+  ## Provide secret names that exist in the cluster
+  names: []
+
+configMap:
+  enabled: false
+  data: {}
+
+persistence:
+  enabled: false
+  storageClassName: "standard"
+  accessMode: ReadWriteOnce
+  size: 10Gi
+  mountPath: /data

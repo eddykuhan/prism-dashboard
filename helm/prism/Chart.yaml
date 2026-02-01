@@ -1,0 +1,15 @@
+apiVersion: v2
+name: prism
+description: OTEL Dashboard for visualizing OpenTelemetry traces, metrics, and logs
+type: application
+version: 0.1.0
+appVersion: "1.0.0"
+maintainers:
+  - name: Prism Team
+keywords:
+  - opentelemetry
+  - observability
+  - tracing
+  - metrics
+  - logging
+  - dashboard

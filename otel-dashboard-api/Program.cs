@@ -1,4 +1,5 @@
 using System.Text.Json.Serialization;
+using Amazon.DynamoDBv2;
 using Grpc.AspNetCore.Server;
 using Microsoft.AspNetCore.Server.Kestrel.Core;
 using Microsoft.Identity.Web;
@@ -50,7 +51,51 @@ builder.Services.AddSwaggerGen(c =>
 });
 
 // Register custom services as singletons for shared state
-builder.Services.AddSingleton<InMemoryStore>();
+// Check if DynamoDB is configured via environment variable
+var dynamoDbEndpoint = builder.Configuration["DYNAMODB_SERVICE_URL"] 
+    ?? builder.Configuration["DYNAMODB_ENDPOINT"];
+var useDynamoDb = !string.IsNullOrEmpty(dynamoDbEndpoint);
+
+if (useDynamoDb)
+{
+    // Use DynamoDB for persistent storage
+    builder.Services.AddSingleton<IAmazonDynamoDB>(sp =>
+    {
+        var config = new AmazonDynamoDBConfig();
+        
+        // For local DynamoDB (docker)
+        if (dynamoDbEndpoint!.Contains("localhost") || dynamoDbEndpoint.Contains("127.0.0.1") || dynamoDbEndpoint.Contains("dynamodb-local"))
+        {
+            config.ServiceURL = dynamoDbEndpoint;
+            // Use dummy credentials for local DynamoDB
+            return new AmazonDynamoDBClient("local", "local", config);
+        }
+        else
+        {
+            // For AWS DynamoDB, use IAM credentials from environment/IRSA
+            var region = builder.Configuration["AWS_REGION"] ?? "us-east-1";
+            config.RegionEndpoint = Amazon.RegionEndpoint.GetBySystemName(region);
+            return new AmazonDynamoDBClient(config);
+        }
+    });
+    
+    builder.Services.AddSingleton<DynamoDbTelemetryStore>();
+    builder.Services.AddSingleton<ITelemetryStore>(sp => sp.GetRequiredService<DynamoDbTelemetryStore>());
+    
+    // Keep InMemoryStore for backward compatibility (gRPC services still use it directly)
+    builder.Services.AddSingleton<InMemoryStore>();
+    
+    Console.WriteLine($"✅ DynamoDB storage enabled: {dynamoDbEndpoint}");
+}
+else
+{
+    // Use in-memory storage (default)
+    builder.Services.AddSingleton<InMemoryStore>();
+    builder.Services.AddSingleton<ITelemetryStore>(sp => sp.GetRequiredService<InMemoryStore>());
+    
+    Console.WriteLine("⚡ In-memory storage enabled (set DYNAMODB_SERVICE_URL for persistent storage)");
+}
+
 builder.Services.AddSingleton<WebSocketStreamService>();
 
 // Configure gRPC for OTLP receiver (Traces, Metrics, Logs)

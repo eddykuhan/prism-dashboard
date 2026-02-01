@@ -1,13 +1,14 @@
 # OTEL Dashboard API
 
-A high-performance OpenTelemetry collector and visualization backend built with .NET 10. Receives telemetry data (traces, metrics, logs) via both HTTP/JSON and gRPC protocols, stores data in-memory with configurable limits, and provides real-time querying and WebSocket streaming capabilities.
+A high-performance OpenTelemetry collector and visualization backend built with .NET 10. Receives telemetry data (traces, metrics, logs) via both HTTP/JSON and gRPC protocols, with configurable storage (in-memory or DynamoDB for persistence), and provides real-time querying and WebSocket streaming capabilities.
 
 ## Features
 
 - ✅ **Full OTLP Compatibility**: Receive telemetry via standard OpenTelemetry Protocol (OTLP)
 - ✅ **Dual Protocol Support**: HTTP/JSON and gRPC endpoints for maximum flexibility
 - ✅ **Real-time Streaming**: WebSocket-based updates for live telemetry monitoring
-- ✅ **High-throughput Storage**: Concurrent, thread-safe in-memory storage with secondary indexes
+- ✅ **Configurable Storage**: In-memory (default) or DynamoDB for persistent storage
+- ✅ **AWS Native**: DynamoDB integration with IRSA support for EKS deployments
 - ✅ **Dashboard-ready API**: REST endpoints optimized for frontend visualization
 - ✅ **Health Checks**: Built-in system health and telemetry stats endpoints
 
@@ -156,9 +157,18 @@ ws://localhost:5003/ws/stream
 
 ## Configuration
 
-### Storage Limits
+### Storage Backend
 
-Configure in `Services/InMemoryStore.cs`:
+Prism supports two storage backends:
+
+#### 1. In-Memory Storage (Default)
+
+The default storage uses concurrent in-memory collections. Best for:
+- Local development
+- Quick testing
+- Short-lived telemetry (no persistence)
+
+Configure limits in `Services/InMemoryStore.cs`:
 
 ```csharp
 private const int MaxLogs = 100_000;
@@ -167,6 +177,128 @@ private const int MaxTraces = 50_000;
 ```
 
 Storage uses **FIFO eviction** when limits are exceeded.
+
+#### 2. DynamoDB Storage (Persistent)
+
+For production use with data retention and persistence. Best for:
+- AWS EKS deployments
+- Multi-pod/replica setups (shared storage)
+- Data retention requirements (configurable TTL)
+- High-volume telemetry (auto-scales)
+
+**Enable DynamoDB by setting environment variables:**
+
+| Variable | Required | Default | Description |
+|----------|----------|---------|-------------|
+| `DYNAMODB_SERVICE_URL` | ✅ | - | DynamoDB endpoint. Set to `http://dynamodb-local:8000` for local, leave empty for AWS (uses IAM). |
+| `AWS_REGION` | ✅ (AWS) | `us-east-1` | AWS region for DynamoDB |
+| `DYNAMODB_LOGS_TABLE` | ❌ | `prism-logs` | Table name for logs |
+| `DYNAMODB_METRICS_TABLE` | ❌ | `prism-metrics` | Table name for metrics |
+| `DYNAMODB_TRACES_TABLE` | ❌ | `prism-traces` | Table name for traces |
+| `DYNAMODB_TTL_DAYS` | ❌ | `30` | Data retention period in days |
+
+**Table Schema (auto-created for local, manual for AWS):**
+
+```
+Partition Key: ServiceName (S)
+Sort Key: TimestampNs (N)
+TTL Attribute: ExpiresAt
+```
+
+**Cost Estimate (AWS DynamoDB):**
+- ~$8-15/month for 1M logs/day, 30-day retention
+- Pay-per-request billing mode (no provisioned capacity)
+
+### Local Development with DynamoDB
+
+Use Docker Compose for local DynamoDB testing:
+
+```bash
+# Start DynamoDB Local + Prism
+docker-compose up -d
+
+# View DynamoDB Admin UI
+open http://localhost:8001
+
+# View Prism Dashboard
+open http://localhost:5003
+```
+
+The `docker-compose.yml` automatically:
+- Starts DynamoDB Local on port 8000
+- Creates required tables with TTL enabled
+- Starts Prism connected to local DynamoDB
+
+### AWS EKS Production Setup
+
+1. **Create DynamoDB Tables** (via Terraform/CloudFormation):
+
+```hcl
+resource "aws_dynamodb_table" "prism_logs" {
+  name         = "prism-logs"
+  billing_mode = "PAY_PER_REQUEST"
+  hash_key     = "ServiceName"
+  range_key    = "TimestampNs"
+
+  attribute {
+    name = "ServiceName"
+    type = "S"
+  }
+  attribute {
+    name = "TimestampNs"
+    type = "N"
+  }
+
+  ttl {
+    attribute_name = "ExpiresAt"
+    enabled        = true
+  }
+}
+```
+
+2. **Configure IAM Role for Service Account (IRSA):**
+
+```yaml
+# ServiceAccount annotation in Helm values
+serviceAccount:
+  annotations:
+    eks.amazonaws.com/role-arn: arn:aws:iam::ACCOUNT_ID:role/prism-dynamodb-role
+```
+
+3. **IAM Policy:**
+
+```json
+{
+  "Version": "2012-10-17",
+  "Statement": [{
+    "Effect": "Allow",
+    "Action": [
+      "dynamodb:PutItem",
+      "dynamodb:GetItem",
+      "dynamodb:Query",
+      "dynamodb:Scan",
+      "dynamodb:BatchWriteItem"
+    ],
+    "Resource": [
+      "arn:aws:dynamodb:*:*:table/prism-*"
+    ]
+  }]
+}
+```
+
+4. **Helm values for DynamoDB:**
+
+```yaml
+storage:
+  type: dynamodb
+  dynamodb:
+    region: us-east-1
+    logsTable: prism-logs
+    metricsTable: prism-metrics
+    tracesTable: prism-traces
+    ttlDays: 30
+    endpoint: ""  # Empty for AWS (uses IAM)
+```
 
 ### Application Settings
 
