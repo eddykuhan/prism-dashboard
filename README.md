@@ -1,5 +1,9 @@
 # Prism: OTEL Dashboard with AI Copilot
 
+<div align="center">
+  <img src="public/logo.svg" alt="Prism Logo" width="128" height="128" />
+</div>
+
 A unified OpenTelemetry (OTEL) dashboard combining real-time trace, metrics, and log visualization with intelligent Azure OpenAI integration via OAuth2 On-Behalf-Of (OBO) flow.
 
 ## 🎯 Features
