@@ -55,8 +55,8 @@ public class LogsController : ControllerBase
         [FromQuery] string? traceId = null,
         [FromQuery] int limit = 100)
     {
-        Models.LogLevel? logLevel = null;
-        if (!string.IsNullOrEmpty(level) && Enum.TryParse<Models.LogLevel>(level, true, out var parsed))
+        Models.SeverityLevel? logLevel = null;
+        if (!string.IsNullOrEmpty(level) && Enum.TryParse<Models.SeverityLevel>(level, true, out var parsed))
         {
             logLevel = parsed;
         }

@@ -121,21 +121,21 @@ public static class OtlpHelpers
     }
 
     /// <summary>
-    /// Maps OTLP severity number to our LogLevel.
+    /// Maps OTLP severity number to our SeverityLevel.
     /// </summary>
-    public static Models.LogLevel MapSeverity(SeverityNumber severity)
+    public static Models.SeverityLevel MapSeverity(SeverityNumber severity)
     {
         // SeverityNumber values: TRACE=1-4, DEBUG=5-8, INFO=9-12, WARN=13-16, ERROR=17-20, FATAL=21-24
         var severityInt = (int)severity;
         return severityInt switch
         {
-            >= 21 => Models.LogLevel.Fatal,    // FATAL, FATAL2, FATAL3, FATAL4
-            >= 17 => Models.LogLevel.Error,    // ERROR, ERROR2, ERROR3, ERROR4
-            >= 13 => Models.LogLevel.Warn,     // WARN, WARN2, WARN3, WARN4
-            >= 9 => Models.LogLevel.Info,      // INFO, INFO2, INFO3, INFO4
-            >= 5 => Models.LogLevel.Debug,     // DEBUG, DEBUG2, DEBUG3, DEBUG4
-            >= 1 => Models.LogLevel.Debug,     // TRACE, TRACE2, TRACE3, TRACE4
-            _ => Models.LogLevel.Info
+            >= 21 => Models.SeverityLevel.Fatal,    // FATAL, FATAL2, FATAL3, FATAL4
+            >= 17 => Models.SeverityLevel.Error,    // ERROR, ERROR2, ERROR3, ERROR4
+            >= 13 => Models.SeverityLevel.Warn,     // WARN, WARN2, WARN3, WARN4
+            >= 9 => Models.SeverityLevel.Info,      // INFO, INFO2, INFO3, INFO4
+            >= 5 => Models.SeverityLevel.Debug,     // DEBUG, DEBUG2, DEBUG3, DEBUG4
+            >= 1 => Models.SeverityLevel.Debug,     // TRACE, TRACE2, TRACE3, TRACE4
+            _ => Models.SeverityLevel.Info
         };
     }
 

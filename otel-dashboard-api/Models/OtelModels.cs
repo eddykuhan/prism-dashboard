@@ -9,14 +9,14 @@ public record LogEntry
     public required string TraceId { get; init; }
     public required string SpanId { get; init; }
     public required DateTime Timestamp { get; init; }
-    public required LogLevel Level { get; init; }
+    public required SeverityLevel Level { get; init; }
     public required string ServiceName { get; init; }
     public required string Message { get; init; }
     public Dictionary<string, object> Attributes { get; init; } = new();
     public ResourceInfo? Resource { get; init; }
 }
 
-public enum LogLevel
+public enum SeverityLevel
 {
     Debug,
     Info,

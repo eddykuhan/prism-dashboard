@@ -93,7 +93,7 @@ public class DynamoDbTelemetryStore : ITelemetryStore
 
     public async Task<List<LogEntry>> QueryLogsAsync(
         string? serviceName = null,
-        LogLevel? level = null,
+        SeverityLevel? level = null,
         DateTime? startTime = null,
         DateTime? endTime = null,
         string? traceId = null,
@@ -206,7 +206,7 @@ public class DynamoDbTelemetryStore : ITelemetryStore
             Timestamp = new DateTime(long.Parse(item.GetValueOrDefault("TimestampNs")?.N ?? "0")),
             TraceId = item.GetValueOrDefault("TraceId")?.S ?? "",
             SpanId = item.GetValueOrDefault("SpanId")?.S ?? "",
-            Level = Enum.TryParse<LogLevel>(item.GetValueOrDefault("Level")?.S, out var lvl) ? lvl : LogLevel.Info,
+            Level = Enum.TryParse<SeverityLevel>(item.GetValueOrDefault("Level")?.S, out var lvl) ? lvl : SeverityLevel.Info,
             Message = item.GetValueOrDefault("Message")?.S ?? "",
             Attributes = JsonSerializer.Deserialize<Dictionary<string, object>>(
                 item.GetValueOrDefault("Attributes")?.S ?? "{}") ?? new()
@@ -753,12 +753,12 @@ public class DynamoDbTelemetryStore : ITelemetryStore
             var severityNumber = logRecord.TryGetProperty("severityNumber", out var sn) ? sn.GetInt32() : 9;
             var level = severityNumber switch
             {
-                <= 4 => LogLevel.Debug,
-                <= 8 => LogLevel.Debug,
-                <= 12 => LogLevel.Info,
-                <= 16 => LogLevel.Warn,
-                <= 20 => LogLevel.Error,
-                _ => LogLevel.Fatal
+                <= 4 => SeverityLevel.Debug,
+                <= 8 => SeverityLevel.Debug,
+                <= 12 => SeverityLevel.Info,
+                <= 16 => SeverityLevel.Warn,
+                <= 20 => SeverityLevel.Error,
+                _ => SeverityLevel.Fatal
             };
 
             var message = "";

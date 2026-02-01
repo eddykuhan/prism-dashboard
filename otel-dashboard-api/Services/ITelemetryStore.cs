@@ -25,7 +25,7 @@ public interface ITelemetryStore
     /// </summary>
     Task<List<LogEntry>> QueryLogsAsync(
         string? serviceName = null,
-        LogLevel? level = null,
+        SeverityLevel? level = null,
         DateTime? startTime = null,
         DateTime? endTime = null,
         string? traceId = null,

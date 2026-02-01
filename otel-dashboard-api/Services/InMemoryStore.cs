@@ -82,7 +82,7 @@ public class InMemoryStore : ITelemetryStore
     /// </summary>
     public List<LogEntry> QueryLogs(
         string? serviceName = null,
-        Models.LogLevel? level = null,
+        Models.SeverityLevel? level = null,
         DateTime? startTime = null,
         DateTime? endTime = null,
         string? traceId = null,
@@ -308,7 +308,7 @@ public class InMemoryStore : ITelemetryStore
 
     public Task<List<LogEntry>> QueryLogsAsync(
         string? serviceName = null,
-        LogLevel? level = null,
+        SeverityLevel? level = null,
         DateTime? startTime = null,
         DateTime? endTime = null,
         string? traceId = null,
@@ -654,17 +654,17 @@ public class InMemoryStore : ITelemetryStore
         return dict;
     }
 
-    private static Models.LogLevel MapSeverityNumber(int severityNumber)
+    private static Models.SeverityLevel MapSeverityNumber(int severityNumber)
     {
         return severityNumber switch
         {
-            >= 21 => Models.LogLevel.Fatal,    // FATAL, FATAL2, FATAL3, FATAL4
-            >= 17 => Models.LogLevel.Error,    // ERROR, ERROR2, ERROR3, ERROR4
-            >= 13 => Models.LogLevel.Warn,     // WARN, WARN2, WARN3, WARN4
-            >= 9 => Models.LogLevel.Info,      // INFO, INFO2, INFO3, INFO4
-            >= 5 => Models.LogLevel.Debug,     // DEBUG, DEBUG2, DEBUG3, DEBUG4
-            >= 1 => Models.LogLevel.Debug,     // TRACE, TRACE2, TRACE3, TRACE4
-            _ => Models.LogLevel.Info
+            >= 21 => Models.SeverityLevel.Fatal,    // FATAL, FATAL2, FATAL3, FATAL4
+            >= 17 => Models.SeverityLevel.Error,    // ERROR, ERROR2, ERROR3, ERROR4
+            >= 13 => Models.SeverityLevel.Warn,     // WARN, WARN2, WARN3, WARN4
+            >= 9 => Models.SeverityLevel.Info,      // INFO, INFO2, INFO3, INFO4
+            >= 5 => Models.SeverityLevel.Debug,     // DEBUG, DEBUG2, DEBUG3, DEBUG4
+            >= 1 => Models.SeverityLevel.Debug,     // TRACE, TRACE2, TRACE3, TRACE4
+            _ => Models.SeverityLevel.Info
         };
     }
 
