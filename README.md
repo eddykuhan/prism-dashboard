@@ -5,15 +5,19 @@ A unified OpenTelemetry (OTEL) dashboard combining real-time trace, metrics, and
 ## 🎯 Features
 
 ### Core Dashboard
-- **Real-time Traces** - Visualize distributed traces with span hierarchy and timing
-- **Live Metrics** - Monitor system metrics with streaming updates
-- **Structured Logs** - View and search application logs in real-time
+- **Real-time Logs** - Stream and search application logs with live ingestion metrics
+- **Distributed Traces** - Visualize trace spans with flamegraph-style display and timing analysis
+- **Live Metrics** - Monitor system metrics with streaming updates and charts
 - **WebSocket Streaming** - Efficient real-time data delivery via gRPC and HTTP/JSON
+- **Interactive Charts** - Real-time ingestion activity graph with hover tooltips
+- **OTLP-Ready** - Drop-in OTLP exporter support for .NET, Node.js, Python, Go, and more
+- **Collapsible Sidebar** - Compact icon-only mode for focused dashboard views
+- **Dark/Light Mode** - Full theme support with Material Design
 
 ### AI Copilot (Optional)
-- **Trace Analysis** - AI-powered analysis and debugging of distributed traces
-- **Log Explanation** - Understand error logs with contextual AI insights
-- **Span Inspection** - Detailed span explanations and performance analysis
+- **Trace Analysis** - AI-powered debugging and performance insights
+- **Log Explanation** - Understand errors and anomalies with context
+- **Smart Suggestions** - Get recommendations based on telemetry patterns
 - **Azure OpenAI Integration** - Secure OBO token flow for multi-tenant scenarios
 
 ## 📋 Project Structure
@@ -46,19 +50,29 @@ prism/
     │   ├── app/
     │   │   ├── core/
     │   │   │   ├── services/
-    │   │   │   │   ├── auth.service.ts         # MSAL wrapper
-    │   │   │   │   ├── app-config.service.ts   # Runtime config
-    │   │   │   │   ├── ai-assistant.service.ts # AI calls
-    │   │   │   │   └── ...
+    │   │   │   │   ├── auth.service.ts              # MSAL wrapper
+    │   │   │   │   ├── app-config.service.ts        # Runtime config
+    │   │   │   │   ├── ai-assistant.service.ts      # AI calls
+    │   │   │   │   ├── websocket.service.ts         # WebSocket streaming
+    │   │   │   │   ├── log-stream.service.ts        # Live log updates
+    │   │   │   │   ├── trace-stream.service.ts      # Live trace updates
+    │   │   │   │   └── metric-stream.service.ts     # Live metric updates
     │   │   │   ├── interceptors/
-    │   │   │   │   └── auth.interceptor.ts     # Bearer token attachment
+    │   │   │   │   └── auth.interceptor.ts          # Bearer token attachment
     │   │   │   └── models/
+    │   │   │       └── otel.models.ts               # TypeScript types for OTLP data
     │   │   ├── features/
-    │   │   │   ├── traces/
-    │   │   │   ├── metrics/
-    │   │   │   └── logs/
-    │   │   └── app.component.ts
-    │   ├── main.ts                   # Config bootstrap
+    │   │   │   ├── home/                            # Dashboard overview with charts
+    │   │   │   ├── logs/                            # Log viewer with search
+    │   │   │   ├── traces/                          # Trace flamegraph view
+    │   │   │   ├── metrics/                         # Metrics dashboard
+    │   │   │   └── guide/                           # Setup guide with code samples
+    │   │   ├── shared/
+    │   │   │   └── components/
+    │   │   │       ├── prism-logo/                  # Prism icon component
+    │   │   │       └── ai-panel/                    # AI Copilot chat
+    │   │   └── app.component.ts                     # Root with sidebar navigation
+    │   ├── main.ts                                  # Config bootstrap
     │   └── styles.scss
     ├── angular.json
     └── package.json
@@ -246,6 +260,18 @@ kubectl expose deployment prism --port=5003 --type=LoadBalancer
 
 ## 📈 Sending Telemetry Data
 
+### Quick Start: Connect Your Service
+
+**Environment Variable:**
+```bash
+export OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4317
+```
+
+**Or Docker:**
+```bash
+docker run -e OTEL_EXPORTER_OTLP_ENDPOINT=http://prism:4317 yourapp:latest
+```
+
 ### OTLP Client Configuration
 
 **OpenTelemetry Python:**
@@ -275,6 +301,28 @@ provider.addSpanProcessor(new BatchSpanProcessor(exporter));
 ```go
 exporter, _ := otlptracegrpc.New(ctx, otlptracegrpc.WithEndpoint("localhost:4317"))
 provider := sdktrace.NewTracerProvider(sdktrace.WithBatcher(exporter))
+```
+
+**OpenTelemetry Collector Gateway:**
+```yaml
+# otel-collector-config.yaml
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+      http:
+        endpoint: 0.0.0.0:4318
+
+exporters:
+  otlp/prism:
+    endpoint: http://prism:4317
+
+service:
+  pipelines:
+    traces:
+      receivers: [otlp]
+      exporters: [otlp/prism]
 ```
 
 ## 🔐 Security Notes
