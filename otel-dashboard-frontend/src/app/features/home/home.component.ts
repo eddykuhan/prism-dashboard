@@ -105,36 +105,78 @@ import { HealthStats } from '../../core/models/otel.models';
               <span class="flex items-center gap-1.5"><span class="size-2 rounded-full bg-indigo-500"></span> Metrics</span>
             </div>
           </div>
-          <svg class="w-full h-40 mb-2" viewBox="0 0 500 120" preserveAspectRatio="none" style="display: block;">
-            <!-- Grid lines -->
-            <line x1="0" y1="30" x2="500" y2="30" stroke="currentColor" stroke-width="0.5" opacity="0.1"/>
-            <line x1="0" y1="60" x2="500" y2="60" stroke="currentColor" stroke-width="0.5" opacity="0.1"/>
-            <line x1="0" y1="90" x2="500" y2="90" stroke="currentColor" stroke-width="0.5" opacity="0.1"/>
+          <div class="relative">
+            <svg class="w-full h-40 mb-2 cursor-crosshair" 
+                 viewBox="0 0 500 120" 
+                 preserveAspectRatio="none" 
+                 style="display: block;"
+                 (mousemove)="onChartMouseMove($event)"
+                 (mouseleave)="onChartMouseLeave()">
+              <!-- Grid lines -->
+              <line x1="0" y1="30" x2="500" y2="30" stroke="currentColor" stroke-width="0.5" opacity="0.1"/>
+              <line x1="0" y1="60" x2="500" y2="60" stroke="currentColor" stroke-width="0.5" opacity="0.1"/>
+              <line x1="0" y1="90" x2="500" y2="90" stroke="currentColor" stroke-width="0.5" opacity="0.1"/>
+              
+              <!-- Hover line -->
+              @if (hoverIndex !== null) {
+                <line [attr.x1]="(hoverIndex / 59) * 500" 
+                      [attr.y1]="0" 
+                      [attr.x2]="(hoverIndex / 59) * 500" 
+                      [attr.y2]="120" 
+                      stroke="currentColor" 
+                      stroke-width="1" 
+                      opacity="0.3" 
+                      stroke-dasharray="4,4"/>
+              }
+              
+              <!-- Metrics line -->
+              <polyline [attr.points]="metricsPath" 
+                        fill="none" 
+                        stroke="#818cf8" 
+                        stroke-width="2" 
+                        vector-effect="non-scaling-stroke"
+                        style="transition: d 0.3s ease;"/>
+              
+              <!-- Traces line -->
+              <polyline [attr.points]="tracesPath" 
+                        fill="none" 
+                        stroke="#f97316" 
+                        stroke-width="2" 
+                        vector-effect="non-scaling-stroke"
+                        style="transition: d 0.3s ease;"/>
+              
+              <!-- Logs line -->
+              <polyline [attr.points]="logsPath" 
+                        fill="none" 
+                        stroke="#3b82f6" 
+                        stroke-width="2" 
+                        vector-effect="non-scaling-stroke"
+                        style="transition: d 0.3s ease;"/>
+            </svg>
             
-            <!-- Metrics line -->
-            <polyline [attr.points]="metricsPath" 
-                      fill="none" 
-                      stroke="#818cf8" 
-                      stroke-width="2" 
-                      vector-effect="non-scaling-stroke"
-                      style="transition: d 0.3s ease;"/>
-            
-            <!-- Traces line -->
-            <polyline [attr.points]="tracesPath" 
-                      fill="none" 
-                      stroke="#f97316" 
-                      stroke-width="2" 
-                      vector-effect="non-scaling-stroke"
-                      style="transition: d 0.3s ease;"/>
-            
-            <!-- Logs line -->
-            <polyline [attr.points]="logsPath" 
-                      fill="none" 
-                      stroke="#3b82f6" 
-                      stroke-width="2" 
-                      vector-effect="non-scaling-stroke"
-                      style="transition: d 0.3s ease;"/>
-          </svg>
+            <!-- Tooltip -->
+            @if (hoverIndex !== null && activityData[hoverIndex]) {
+              <div class="absolute top-0 right-0 mt-2 mr-2 bg-slate-900 dark:bg-slate-950 text-white rounded-lg shadow-lg p-3 pointer-events-none text-xs space-y-1 border border-slate-700"
+                   [style.transform]="'translateX(-' + (hoverTooltipOffsetX | number:'1.0-0') + '%)'" >
+                <div class="font-semibold text-slate-300">{{ hoverTimeLabel }}</div>
+                <div class="flex items-center gap-2">
+                  <span class="size-2 rounded-full bg-blue-500"></span>
+                  <span>Logs:</span>
+                  <span class="font-semibold">{{ activityData[hoverIndex]?.logs | number:'1.1-1' }}</span>
+                </div>
+                <div class="flex items-center gap-2">
+                  <span class="size-2 rounded-full bg-orange-500"></span>
+                  <span>Traces:</span>
+                  <span class="font-semibold">{{ activityData[hoverIndex]?.traces | number:'1.1-1' }}</span>
+                </div>
+                <div class="flex items-center gap-2">
+                  <span class="size-2 rounded-full bg-indigo-500"></span>
+                  <span>Metrics:</span>
+                  <span class="font-semibold">{{ activityData[hoverIndex]?.metrics | number:'1.1-1' }}</span>
+                </div>
+              </div>
+            }
+          </div>
           <div class="flex justify-between text-[10px] text-slate-400">
             <span>60s ago</span>
             <span>Now</span>
@@ -241,6 +283,11 @@ export class HomeComponent implements OnInit, OnDestroy {
   logsPath = '';
   tracesPath = '';
   metricsPath = '';
+  
+  // Hover tooltip state
+  hoverIndex: number | null = null;
+  hoverTimeLabel = '';
+  hoverTooltipOffsetX = 0;
   
   // Throughput
   logsPerSec = 0;
@@ -386,4 +433,31 @@ export class HomeComponent implements OnInit, OnDestroy {
     if (localCount > 0) return localCount;
     return apiCount ?? 0;
   }
-}
+  
+  onChartMouseMove(event: MouseEvent): void {
+    const svg = event.target as SVGSVGElement;
+    const rect = svg.getBoundingClientRect();
+    const x = event.clientX - rect.left;
+    const percentage = x / rect.width;
+    
+    // Map percentage to data point index
+    const index = Math.round(percentage * (this.activityData.length - 1));
+    const clampedIndex = Math.max(0, Math.min(index, this.activityData.length - 1));
+    
+    this.hoverIndex = clampedIndex;
+    this.hoverTooltipOffsetX = percentage > 0.7 ? (1 - percentage) * 100 : 0;
+    
+    // Calculate time label
+    const secondsAgo = this.activityData.length - 1 - clampedIndex;
+    if (secondsAgo === 0) {
+      this.hoverTimeLabel = 'Now';
+    } else if (secondsAgo === 1) {
+      this.hoverTimeLabel = '1s ago';
+    } else {
+      this.hoverTimeLabel = `${secondsAgo}s ago`;
+    }
+  }
+  
+  onChartMouseLeave(): void {
+    this.hoverIndex = null;
+  }}
