@@ -66,6 +66,21 @@ import { RouterLink } from '@angular/router';
           </pre>
         </section>
 
+        <section class="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#0f1629] p-5 space-y-4">
+          <div>
+            <h2 class="text-lg font-semibold">OpenTelemetry Collector</h2>
+            <p class="text-sm text-slate-500 dark:text-slate-400">Use the OTEL Collector as a gateway to aggregate and forward telemetry to Prism.</p>
+          </div>
+          <pre class="text-xs bg-slate-900 text-slate-100 p-4 rounded-lg overflow-x-auto">
+            <code [innerText]="otelCollectorSnippet"></code>
+          </pre>
+          <ul class="text-sm text-slate-600 dark:text-slate-300 space-y-1">
+            <li>• Point your apps to the collector at <code class="px-1 py-0.5 rounded bg-slate-100 dark:bg-slate-800">localhost:4317</code></li>
+            <li>• The collector forwards to Prism at the configured endpoint</li>
+            <li>• Add processors (batch, memory_limiter) for production workloads</li>
+          </ul>
+        </section>
+
         <section class="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#0f1629] p-5 space-y-3">
           <h2 class="text-lg font-semibold">Troubleshooting</h2>
           <ul class="list-disc list-inside text-sm text-slate-600 dark:text-slate-300 space-y-2">
@@ -123,4 +138,39 @@ const sdk = new NodeSDK({
 });
 
 sdk.start();`;
+
+  readonly otelCollectorSnippet = `# otel-collector-config.yaml
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+      http:
+        endpoint: 0.0.0.0:4318
+
+processors:
+  batch:
+    timeout: 1s
+    send_batch_size: 1024
+
+exporters:
+  otlp/prism:
+    endpoint: http://prism:4317
+    tls:
+      insecure: true
+
+service:
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [otlp/prism]
+    metrics:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [otlp/prism]
+    logs:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [otlp/prism]`;
 }
